@@ -150,25 +150,34 @@
         text-align: center;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
+      .forecast h3 {
+        margin-bottom: 15px;
+      }
       .forecast-container {
         display: flex;
         justify-content: space-between;
-        flex-wrap: wrap;
-        margin-top: 15px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 10px;
       }
       .forecast-day {
-        flex: 1 1 28%;
-        margin: 10px 5px;
+        flex: 1 1 14%;
         background: #f7f7f7;
         border-radius: 10px;
-        padding: 10px;
+        padding: 10px 5px;
         font-size: 14px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        min-width: 60px;
       }
       .forecast-day h4 {
         margin: 5px 0;
-        font-size: 15px;
+        font-size: 14px;
+        color: #555;
       }
+      .forecast-day p {
+        margin: 3px 0;
+      }
+
       @keyframes spinSun {
         0% {
           transform: rotate(0deg);
@@ -249,10 +258,12 @@
       <p class="details">Humidity: --%, Wind: -- km/h</p>
       <p class="error" id="errorMsg"></p>
     </section>
+
     <section id="forecast" class="forecast">
       <h3>7-Day Forecast</h3>
       <div id="forecastContainer" class="forecast-container"></div>
     </section>
+
     <section class="email-signup">
       <h3>Subscribe for Weather Updates</h3>
       <form id="emailForm">
@@ -266,6 +277,7 @@
       </form>
       <p id="emailMessage"></p>
     </section>
+
     <footer>
       <p>
         This project was coded by Jade Dickinson, is open-sourced on
@@ -274,8 +286,10 @@
         <a href="https://www.netlify.com" target="_blank">Netlify</a>.
       </p>
     </footer>
+
     <script>
       const apiKey = "f884bd7baca8c1818a3ad457d2644c90";
+
       function getWeatherEmoji(main) {
         main = main.toLowerCase();
         if (main.includes("clear")) return "☀️";
@@ -298,6 +312,7 @@
           return "🌪️";
         return "";
       }
+
       async function fetchWeather(city) {
         const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
           city
@@ -311,6 +326,7 @@
           showError("Error fetching data. Please check your connection.");
         }
       }
+
       async function fetchForecast(lat, lon) {
         const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
         try {
@@ -321,22 +337,25 @@
           console.error("Forecast error:", e);
         }
       }
+
       function updateForecast(data) {
         const forecastContainer = document.getElementById("forecastContainer");
         forecastContainer.innerHTML = "";
-        const days = {};
+        const daily = {};
+
         data.list.forEach((item) => {
           const date = new Date(item.dt * 1000);
-          const dayName = date.toLocaleDateString("en-US", {
-            weekday: "short",
-          });
-          if (!days[dayName]) days[dayName] = item;
+          const day = date.toLocaleDateString("en-US", { weekday: "short" });
+          if (!daily[day]) daily[day] = { temps: [], item };
+          daily[day].temps.push(item.main.temp);
         });
-        Object.keys(days)
+
+        Object.keys(daily)
           .slice(0, 7)
           .forEach((day) => {
-            const item = days[day];
-            const temp = Math.round(item.main.temp);
+            const { item, temps } = daily[day];
+            const max = Math.round(Math.max(...temps));
+            const min = Math.round(Math.min(...temps));
             const desc = item.weather[0].main.toLowerCase();
             const emoji = getWeatherEmoji(desc);
             let animClass = "";
@@ -346,17 +365,18 @@
               animClass = "rainy";
             else if (desc.includes("thunderstorm")) animClass = "stormy";
             else if (desc.includes("snow")) animClass = "snowy";
+
             const div = document.createElement("div");
             div.classList.add("forecast-day");
             div.innerHTML = `
-            <h4>${day}</h4>
-            <p class="animated-emoji ${animClass}">${emoji}</p>
-            <p>${temp}°C</p>
-            <p>${desc}</p>
-          `;
+              <h4>${day}</h4>
+              <p class="animated-emoji ${animClass}">${emoji}</p>
+              <p><strong>${max}°</strong> <span style="color:#d16ba5;">${min}°</span></p>
+            `;
             forecastContainer.appendChild(div);
           });
       }
+
       function updateWeather(data) {
         document.querySelector(".city").textContent = data.name;
         document.querySelector(".temp").textContent = `${Math.round(
@@ -372,6 +392,7 @@
           animClass = "rainy";
         else if (mainDesc.includes("thunderstorm")) animClass = "stormy";
         else if (mainDesc.includes("snow")) animClass = "snowy";
+
         document.querySelector(
           ".description"
         ).innerHTML = `<span class="animated-emoji ${animClass}">${weatherEmoji}</span> ${desc}`;
@@ -381,9 +402,11 @@
         document.getElementById("errorMsg").textContent = "";
         fetchForecast(data.coord.lat, data.coord.lon);
       }
+
       function showError(msg) {
         document.getElementById("errorMsg").textContent = msg;
       }
+
       document
         .getElementById("searchForm")
         .addEventListener("submit", function (e) {
@@ -395,7 +418,9 @@
           }
           fetchWeather(city);
         });
+
       fetchWeather("Sydney");
+
       document
         .getElementById("emailForm")
         .addEventListener("submit", function (e) {
@@ -416,9 +441,7 @@
           emailMsg.textContent = "✅ Thank you for subscribing!";
           console.log("Email submitted:", email);
           document.getElementById("email").value = "";
-          setTimeout(() => {
-            emailMsg.textContent = "";
-          }, 5000);
+          setTimeout(() => (emailMsg.textContent = ""), 5000);
         });
     </script>
   </body>
