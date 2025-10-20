@@ -140,6 +140,99 @@
       footer a:hover {
         text-decoration: underline;
       }
+      .forecast {
+        margin-top: 30px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        padding: 20px;
+        width: 90%;
+        max-width: 500px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+      .forecast-container {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        margin-top: 15px;
+      }
+      .forecast-day {
+        flex: 1 1 28%;
+        margin: 10px 5px;
+        background: #f7f7f7;
+        border-radius: 10px;
+        padding: 10px;
+        font-size: 14px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      }
+      .forecast-day h4 {
+        margin: 5px 0;
+        font-size: 15px;
+      }
+      @keyframes spinSun {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes floatCloud {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        50% {
+          transform: translateX(5px);
+        }
+      }
+      @keyframes fallRain {
+        0% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(10px);
+          opacity: 0.6;
+        }
+      }
+      @keyframes flashStorm {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.2;
+        }
+      }
+      @keyframes twinkleSnow {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      .animated-emoji {
+        display: inline-block;
+        font-size: 24px;
+      }
+      .sunny {
+        animation: spinSun 6s linear infinite;
+      }
+      .cloudy {
+        animation: floatCloud 4s ease-in-out infinite;
+      }
+      .rainy {
+        animation: fallRain 0.8s ease-in-out infinite;
+      }
+      .stormy {
+        animation: flashStorm 1.2s ease-in-out infinite;
+      }
+      .snowy {
+        animation: twinkleSnow 2.5s ease-in-out infinite;
+      }
     </style>
   </head>
   <body>
@@ -155,6 +248,10 @@
       <p class="description">--</p>
       <p class="details">Humidity: --%, Wind: -- km/h</p>
       <p class="error" id="errorMsg"></p>
+    </section>
+    <section id="forecast" class="forecast">
+      <h3>7-Day Forecast</h3>
+      <div id="forecastContainer" class="forecast-container"></div>
     </section>
     <section class="email-signup">
       <h3>Subscribe for Weather Updates</h3>
@@ -177,7 +274,6 @@
         <a href="https://www.netlify.com" target="_blank">Netlify</a>.
       </p>
     </footer>
-
     <script>
       const apiKey = "f884bd7baca8c1818a3ad457d2644c90";
       function getWeatherEmoji(main) {
@@ -215,20 +311,75 @@
           showError("Error fetching data. Please check your connection.");
         }
       }
+      async function fetchForecast(lat, lon) {
+        const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          if (res.ok) updateForecast(data);
+        } catch (e) {
+          console.error("Forecast error:", e);
+        }
+      }
+      function updateForecast(data) {
+        const forecastContainer = document.getElementById("forecastContainer");
+        forecastContainer.innerHTML = "";
+        const days = {};
+        data.list.forEach((item) => {
+          const date = new Date(item.dt * 1000);
+          const dayName = date.toLocaleDateString("en-US", {
+            weekday: "short",
+          });
+          if (!days[dayName]) days[dayName] = item;
+        });
+        Object.keys(days)
+          .slice(0, 7)
+          .forEach((day) => {
+            const item = days[day];
+            const temp = Math.round(item.main.temp);
+            const desc = item.weather[0].main.toLowerCase();
+            const emoji = getWeatherEmoji(desc);
+            let animClass = "";
+            if (desc.includes("clear")) animClass = "sunny";
+            else if (desc.includes("cloud")) animClass = "cloudy";
+            else if (desc.includes("rain") || desc.includes("drizzle"))
+              animClass = "rainy";
+            else if (desc.includes("thunderstorm")) animClass = "stormy";
+            else if (desc.includes("snow")) animClass = "snowy";
+            const div = document.createElement("div");
+            div.classList.add("forecast-day");
+            div.innerHTML = `
+            <h4>${day}</h4>
+            <p class="animated-emoji ${animClass}">${emoji}</p>
+            <p>${temp}°C</p>
+            <p>${desc}</p>
+          `;
+            forecastContainer.appendChild(div);
+          });
+      }
       function updateWeather(data) {
         document.querySelector(".city").textContent = data.name;
         document.querySelector(".temp").textContent = `${Math.round(
           data.main.temp
         )}°C`;
         const desc = data.weather[0].description;
-        const weatherEmoji = getWeatherEmoji(data.weather[0].main);
+        const mainDesc = data.weather[0].main.toLowerCase();
+        const weatherEmoji = getWeatherEmoji(mainDesc);
+        let animClass = "";
+        if (mainDesc.includes("clear")) animClass = "sunny";
+        else if (mainDesc.includes("cloud")) animClass = "cloudy";
+        else if (mainDesc.includes("rain") || mainDesc.includes("drizzle"))
+          animClass = "rainy";
+        else if (mainDesc.includes("thunderstorm")) animClass = "stormy";
+        else if (mainDesc.includes("snow")) animClass = "snowy";
         document.querySelector(
           ".description"
-        ).textContent = `${weatherEmoji} ${desc}`;
+        ).innerHTML = `<span class="animated-emoji ${animClass}">${weatherEmoji}</span> ${desc}`;
         document.querySelector(".details").textContent = `💧 Humidity: ${
           data.main.humidity
         }%, 🌬️ Wind: ${Math.round(data.wind.speed * 3.6)} km/h`;
         document.getElementById("errorMsg").textContent = "";
+        fetchForecast(data.coord.lat, data.coord.lon);
       }
       function showError(msg) {
         document.getElementById("errorMsg").textContent = msg;
