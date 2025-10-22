@@ -24,7 +24,6 @@
         justify-content: center;
         margin-top: 40px;
       }
-
       .search form {
         display: flex;
         width: 100%;
@@ -179,7 +178,6 @@
       .forecast-day p {
         margin: 3px 0;
       }
-
       @keyframes spinSun {
         0% {
           transform: rotate(0deg);
@@ -203,7 +201,7 @@
           opacity: 1;
         }
         100% {
-          transform: translateY(10px);
+          transform: translateY(15px);
           opacity: 0.6;
         }
       }
@@ -230,19 +228,19 @@
         font-size: 24px;
       }
       .sunny {
-        animation: spinSun 6s linear infinite;
+        animation: spinSun 12s linear infinite;
       }
       .cloudy {
-        animation: floatCloud 4s ease-in-out infinite;
+        animation: floatCloud 8s ease-in-out infinite;
       }
       .rainy {
-        animation: fallRain 0.8s ease-in-out infinite;
+        animation: fallRain 2s ease-in-out infinite;
       }
       .stormy {
-        animation: flashStorm 1.2s ease-in-out infinite;
+        animation: flashStorm 3s ease-in-out infinite;
       }
       .snowy {
-        animation: twinkleSnow 2.5s ease-in-out infinite;
+        animation: twinkleSnow 5s ease-in-out infinite;
       }
     </style>
   </head>
@@ -260,12 +258,10 @@
       <p class="details">Humidity: --%, Wind: -- km/h</p>
       <p class="error" id="errorMsg"></p>
     </section>
-
     <section id="forecast" class="forecast">
       <h3>7-Day Forecast</h3>
       <div id="forecastContainer" class="forecast-container"></div>
     </section>
-
     <section class="email-signup">
       <h3>Subscribe for Weather Updates</h3>
       <form id="emailForm">
@@ -279,7 +275,6 @@
       </form>
       <p id="emailMessage"></p>
     </section>
-
     <footer>
       <p>
         This project was coded by Jade Dickinson, is open-sourced on
@@ -288,10 +283,8 @@
         <a href="https://www.netlify.com" target="_blank">Netlify</a>.
       </p>
     </footer>
-
     <script>
       const apiKey = "f884bd7baca8c1818a3ad457d2644c90";
-
       function getWeatherEmoji(main) {
         main = main.toLowerCase();
         if (main.includes("clear")) return "☀️";
@@ -314,7 +307,6 @@
           return "🌪️";
         return "";
       }
-
       async function fetchWeather(city) {
         const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
           city
@@ -328,7 +320,6 @@
           showError("Error fetching data. Please check your connection.");
         }
       }
-
       async function fetchForecast(lat, lon) {
         const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
         try {
@@ -339,19 +330,16 @@
           console.error("Forecast error:", e);
         }
       }
-
       function updateForecast(data) {
         const forecastContainer = document.getElementById("forecastContainer");
         forecastContainer.innerHTML = "";
         const daily = {};
-
         data.list.forEach((item) => {
           const date = new Date(item.dt * 1000);
           const day = date.toLocaleDateString("en-US", { weekday: "short" });
           if (!daily[day]) daily[day] = { temps: [], item };
           daily[day].temps.push(item.main.temp);
         });
-
         Object.keys(daily)
           .slice(0, 7)
           .forEach((day) => {
@@ -367,7 +355,6 @@
               animClass = "rainy";
             else if (desc.includes("thunderstorm")) animClass = "stormy";
             else if (desc.includes("snow")) animClass = "snowy";
-
             const div = document.createElement("div");
             div.classList.add("forecast-day");
             div.innerHTML = `
@@ -378,7 +365,6 @@
             forecastContainer.appendChild(div);
           });
       }
-
       function updateWeather(data) {
         document.querySelector(".city").textContent = data.name;
         document.querySelector(".temp").textContent = `${Math.round(
@@ -394,7 +380,6 @@
           animClass = "rainy";
         else if (mainDesc.includes("thunderstorm")) animClass = "stormy";
         else if (mainDesc.includes("snow")) animClass = "snowy";
-
         document.querySelector(
           ".description"
         ).innerHTML = `<span class="animated-emoji ${animClass}">${weatherEmoji}</span> ${desc}`;
@@ -404,11 +389,9 @@
         document.getElementById("errorMsg").textContent = "";
         fetchForecast(data.coord.lat, data.coord.lon);
       }
-
       function showError(msg) {
         document.getElementById("errorMsg").textContent = msg;
       }
-
       document
         .getElementById("searchForm")
         .addEventListener("submit", function (e) {
@@ -420,9 +403,7 @@
           }
           fetchWeather(city);
         });
-
       fetchWeather("Sydney");
-
       document
         .getElementById("emailForm")
         .addEventListener("submit", function (e) {
